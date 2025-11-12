@@ -10,7 +10,7 @@ from typing import Dict, Optional
 import boto3
 from botocore.exceptions import ClientError
 
-from src.utils.logger import get_logger, log_execution
+from utils.logger import get_logger, log_execution
 
 logger = get_logger(__name__)
 

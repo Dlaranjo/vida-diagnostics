@@ -12,7 +12,7 @@ from typing import Dict, Optional, Union
 import pydicom
 from pydicom.dataset import FileDataset
 
-from src.utils.logger import get_logger, log_audit_event, log_execution
+from utils.logger import get_logger, log_audit_event, log_execution
 
 logger = get_logger(__name__)
 

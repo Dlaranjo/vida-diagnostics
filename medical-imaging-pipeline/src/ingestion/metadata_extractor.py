@@ -11,7 +11,7 @@ from typing import Any, Dict, List, Union
 
 import pandas as pd
 
-from src.utils.logger import get_logger, log_execution
+from utils.logger import get_logger, log_execution
 
 logger = get_logger(__name__)
 

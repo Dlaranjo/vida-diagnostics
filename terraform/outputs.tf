@@ -83,13 +83,13 @@ output "state_machine_arn" {
 output "deployment_summary" {
   description = "Summary of deployed resources"
   value = {
-    environment          = var.environment
-    region               = var.aws_region
-    raw_bucket           = module.s3.raw_bucket_id
-    processed_bucket     = module.s3.processed_bucket_id
-    ingestion_lambda     = module.lambda.ingestion_function_name
-    validation_lambda    = module.lambda.validation_function_name
+    environment             = var.environment
+    region                  = var.aws_region
+    raw_bucket              = module.s3.raw_bucket_id
+    processed_bucket        = module.s3.processed_bucket_id
+    ingestion_lambda        = module.lambda.ingestion_function_name
+    validation_lambda       = module.lambda.validation_function_name
     deidentification_lambda = module.lambda.deidentification_function_name
-    state_machine        = module.step_functions.state_machine_name
+    state_machine           = module.step_functions.state_machine_name
   }
 }

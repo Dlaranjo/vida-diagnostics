@@ -11,11 +11,11 @@ from pathlib import Path
 from typing import Any, Callable, Dict, Optional
 from urllib.parse import unquote_plus
 
-from src.ingestion.deidentifier import DICOMDeidentifier
-from src.ingestion.validated_parser import ValidatedDICOMParser
-from src.monitoring.cloudwatch_handler import CloudWatchHandler
-from src.storage.s3_handler import S3Handler
-from src.utils.logger import get_logger
+from ingestion.deidentifier import DICOMDeidentifier
+from ingestion.validated_parser import ValidatedDICOMParser
+from monitoring.cloudwatch_handler import CloudWatchHandler
+from storage.s3_handler import S3Handler
+from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -156,7 +156,8 @@ class IngestionHandler:
         self.region_name = region_name
         self.enable_cloudwatch = enable_cloudwatch
 
-        self.s3_handler = S3Handler(bucket_name=output_bucket, region_name=region_name)
+        # Handler for output bucket
+        self.output_s3_handler = S3Handler(bucket_name=output_bucket, region_name=region_name)
         self.parser = ValidatedDICOMParser()
 
         if enable_cloudwatch:
@@ -184,21 +185,24 @@ class IngestionHandler:
             try:
                 # Extract S3 information
                 s3_info = record.get("s3", {})
-                bucket = s3_info.get("bucket", {}).get("name")
+                source_bucket = s3_info.get("bucket", {}).get("name")
                 key = unquote_plus(s3_info.get("object", {}).get("key", ""))
 
-                logger.info(f"Processing DICOM file: s3://{bucket}/{key}")
+                logger.info(f"Processing DICOM file: s3://{source_bucket}/{key}")
+
+                # Create S3 handler for source bucket
+                source_s3_handler = S3Handler(bucket_name=source_bucket, region_name=self.region_name)
 
                 # Download file to temp
                 temp_path = Path(f"/tmp/{Path(key).name}")
-                self.s3_handler.download_file(s3_key=key, local_path=temp_path)
+                source_s3_handler.download_file(s3_key=key, local_path=temp_path)
 
                 # Validate DICOM
                 validated_metadata = self.parser.parse_and_validate(temp_path)
 
                 # Upload to validated bucket
                 validated_key = f"validated/{key}"
-                self.s3_handler.upload_file(
+                self.output_s3_handler.upload_file(
                     local_path=temp_path,
                     s3_key=validated_key,
                     metadata={
@@ -361,7 +365,7 @@ class DeidentificationHandler:
         self.region_name = region_name
         self.enable_cloudwatch = enable_cloudwatch
 
-        self.s3_handler = S3Handler(bucket_name=output_bucket, region_name=region_name)
+        self.output_s3_handler = S3Handler(bucket_name=output_bucket, region_name=region_name)
         self.deidentifier = DICOMDeidentifier()
 
         if enable_cloudwatch:
@@ -390,14 +394,17 @@ class DeidentificationHandler:
             try:
                 # Extract S3 information
                 s3_info = record.get("s3", {})
-                bucket = s3_info.get("bucket", {}).get("name")
+                source_bucket = s3_info.get("bucket", {}).get("name")
                 key = unquote_plus(s3_info.get("object", {}).get("key", ""))
 
-                logger.info(f"De-identifying DICOM file: s3://{bucket}/{key}")
+                logger.info(f"De-identifying DICOM file: s3://{source_bucket}/{key}")
+
+                # Create S3 handler for source bucket
+                source_s3_handler = S3Handler(bucket_name=source_bucket, region_name=self.region_name)
 
                 # Download file
                 temp_input = Path(f"/tmp/input_{Path(key).name}")
-                self.s3_handler.download_file(s3_key=key, local_path=temp_input)
+                source_s3_handler.download_file(s3_key=key, local_path=temp_input)
 
                 # De-identify
                 temp_output = Path(f"/tmp/deidentified_{Path(key).name}")
@@ -407,7 +414,7 @@ class DeidentificationHandler:
 
                 # Upload de-identified file
                 deidentified_key = f"deidentified/{key}"
-                self.s3_handler.upload_file(
+                self.output_s3_handler.upload_file(
                     local_path=temp_output,
                     s3_key=deidentified_key,
                     metadata={"deidentified": "true"},

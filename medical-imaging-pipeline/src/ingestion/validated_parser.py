@@ -10,9 +10,9 @@ from typing import Union
 from pydicom.dataset import FileDataset
 from pydantic import ValidationError
 
-from src.ingestion.dicom_parser import DICOMParser
-from src.utils.logger import get_logger, log_execution
-from src.validation.schemas import (
+from ingestion.dicom_parser import DICOMParser
+from utils.logger import get_logger, log_execution
+from validation.schemas import (
     CTMetadataSchema,
     DICOMInstanceSchema,
     DICOMMetadataSchema,

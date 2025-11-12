@@ -2,7 +2,7 @@
 
 locals {
   # Generate unique bucket names with project name and environment
-  raw_bucket_name = var.raw_bucket_name != "" ? var.raw_bucket_name : "${var.project_name}-${var.environment}-raw-dicom"
+  raw_bucket_name       = var.raw_bucket_name != "" ? var.raw_bucket_name : "${var.project_name}-${var.environment}-raw-dicom"
   processed_bucket_name = var.processed_bucket_name != "" ? var.processed_bucket_name : "${var.project_name}-${var.environment}-processed-dicom"
   logs_bucket_name      = var.logs_bucket_name != "" ? var.logs_bucket_name : "${var.project_name}-${var.environment}-logs"
 
@@ -61,10 +61,10 @@ module "lambda" {
 module "iam" {
   source = "./modules/iam"
 
-  project_name          = var.project_name
-  raw_bucket_arn        = module.s3.raw_bucket_arn
-  processed_bucket_arn  = module.s3.processed_bucket_arn
-  enable_lambda_vpc     = var.enable_lambda_vpc
+  project_name         = var.project_name
+  raw_bucket_arn       = module.s3.raw_bucket_arn
+  processed_bucket_arn = module.s3.processed_bucket_arn
+  enable_lambda_vpc    = var.enable_lambda_vpc
 
   tags = local.common_tags
 
@@ -75,16 +75,16 @@ module "iam" {
 module "step_functions" {
   source = "./modules/step_functions"
 
-  project_name                 = var.project_name
-  state_machine_name           = var.state_machine_name
-  definition_path              = var.state_machine_definition_path
-  execution_role_arn           = module.iam.step_functions_execution_role_arn
-  ingestion_lambda_arn         = module.lambda.ingestion_function_arn
-  validation_lambda_arn        = module.lambda.validation_function_arn
-  deidentification_lambda_arn  = module.lambda.deidentification_function_arn
-  raw_bucket_name              = module.s3.raw_bucket_id
-  log_retention_days           = var.log_retention_days
-  enable_eventbridge_trigger   = false
+  project_name                = var.project_name
+  state_machine_name          = var.state_machine_name
+  definition_path             = var.state_machine_definition_path
+  execution_role_arn          = module.iam.step_functions_execution_role_arn
+  ingestion_lambda_arn        = module.lambda.ingestion_function_arn
+  validation_lambda_arn       = module.lambda.validation_function_arn
+  deidentification_lambda_arn = module.lambda.deidentification_function_arn
+  raw_bucket_name             = module.s3.raw_bucket_id
+  log_retention_days          = var.log_retention_days
+  enable_eventbridge_trigger  = false
 
   tags = local.common_tags
 
