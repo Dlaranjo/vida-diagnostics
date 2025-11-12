@@ -1,0 +1,236 @@
+{
+  "Comment": "DICOM Processing Pipeline - Ingestion, Validation, and De-identification",
+  "StartAt": "IngestionStep",
+  "States": {
+    "IngestionStep": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${IngestionLambdaArn}",
+        "Payload": {
+          "Records.$": "$.Records",
+          "ExecutionId.$": "$$.Execution.Id",
+          "StateMachineArn.$": "$$.StateMachine.Id"
+        }
+      },
+      "ResultPath": "$.ingestionResult",
+      "ResultSelector": {
+        "statusCode.$": "$.Payload.statusCode",
+        "body.$": "$.Payload.body"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException"
+          ],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 3,
+          "BackoffRate": 2
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error",
+          "Next": "ErrorHandler"
+        }
+      ],
+      "Next": "CheckIngestionStatus"
+    },
+    "CheckIngestionStatus": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.ingestionResult.statusCode",
+          "NumericEquals": 200,
+          "Next": "ParseIngestionResult"
+        }
+      ],
+      "Default": "ErrorHandler"
+    },
+    "ParseIngestionResult": {
+      "Type": "Pass",
+      "Parameters": {
+        "Records.$": "$.Records",
+        "ingestionData.$": "States.StringToJson($.ingestionResult.body)",
+        "ExecutionId.$": "$.ExecutionId"
+      },
+      "ResultPath": "$",
+      "Next": "ValidationStep"
+    },
+    "ValidationStep": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${ValidationLambdaArn}",
+        "Payload": {
+          "metadata.$": "$.ingestionData.results[0].metadata",
+          "source_key.$": "$.ingestionData.results[0].validated_key",
+          "ExecutionId.$": "$.ExecutionId"
+        }
+      },
+      "ResultPath": "$.validationResult",
+      "ResultSelector": {
+        "statusCode.$": "$.Payload.statusCode",
+        "body.$": "$.Payload.body"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException"
+          ],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 3,
+          "BackoffRate": 2
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error",
+          "Next": "ErrorHandler"
+        }
+      ],
+      "Next": "CheckValidationStatus"
+    },
+    "CheckValidationStatus": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.validationResult.statusCode",
+          "NumericEquals": 200,
+          "Next": "ParseValidationResult"
+        }
+      ],
+      "Default": "ErrorHandler"
+    },
+    "ParseValidationResult": {
+      "Type": "Pass",
+      "Parameters": {
+        "Records.$": "$.Records",
+        "ingestionData.$": "$.ingestionData",
+        "validationData.$": "States.StringToJson($.validationResult.body)",
+        "ExecutionId.$": "$.ExecutionId"
+      },
+      "ResultPath": "$",
+      "Next": "DeidentificationStep"
+    },
+    "DeidentificationStep": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${DeidentificationLambdaArn}",
+        "Payload": {
+          "Records": [
+            {
+              "s3": {
+                "bucket": {
+                  "name": "${S3Bucket}"
+                },
+                "object": {
+                  "key.$": "$.ingestionData.results[0].validated_key"
+                }
+              }
+            }
+          ],
+          "ExecutionId.$": "$.ExecutionId"
+        }
+      },
+      "ResultPath": "$.deidentificationResult",
+      "ResultSelector": {
+        "statusCode.$": "$.Payload.statusCode",
+        "body.$": "$.Payload.body"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException"
+          ],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 3,
+          "BackoffRate": 2
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error",
+          "Next": "ErrorHandler"
+        }
+      ],
+      "Next": "CheckDeidentificationStatus"
+    },
+    "CheckDeidentificationStatus": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.deidentificationResult.statusCode",
+          "NumericEquals": 200,
+          "Next": "ParseDeidentificationResult"
+        }
+      ],
+      "Default": "ErrorHandler"
+    },
+    "ParseDeidentificationResult": {
+      "Type": "Pass",
+      "Parameters": {
+        "executionId.$": "$.ExecutionId",
+        "ingestion.$": "$.ingestionData",
+        "validation.$": "$.validationData",
+        "deidentification.$": "States.StringToJson($.deidentificationResult.body)",
+        "status": "SUCCESS",
+        "message": "DICOM processing pipeline completed successfully"
+      },
+      "ResultPath": "$",
+      "Next": "PublishSuccessMetric"
+    },
+    "PublishSuccessMetric": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::aws-sdk:cloudwatch:putMetricData",
+      "Parameters": {
+        "Namespace": "MedicalImaging/Pipeline",
+        "MetricData": [
+          {
+            "MetricName": "PipelineSuccess",
+            "Value": 1,
+            "Unit": "Count",
+            "Timestamp.$": "$$.State.EnteredTime"
+          }
+        ]
+      },
+      "ResultPath": "$.metricResult",
+      "Next": "SuccessState"
+    },
+    "SuccessState": {
+      "Type": "Succeed"
+    },
+    "ErrorHandler": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::aws-sdk:cloudwatch:putMetricData",
+      "Parameters": {
+        "Namespace": "MedicalImaging/Pipeline",
+        "MetricData": [
+          {
+            "MetricName": "PipelineFailure",
+            "Value": 1,
+            "Unit": "Count",
+            "Timestamp.$": "$$.State.EnteredTime"
+          }
+        ]
+      },
+      "ResultPath": "$.errorMetricResult",
+      "Next": "FailureState"
+    },
+    "FailureState": {
+      "Type": "Fail",
+      "Error": "PipelineExecutionFailed",
+      "Cause": "One or more steps in the DICOM processing pipeline failed"
+    }
+  }
+}

@@ -1,0 +1,20 @@
+# Include core requirements
+-r requirements.txt
+
+# Testing
+pytest>=7.4.0
+pytest-cov>=4.1.0
+pytest-asyncio>=0.21.0
+moto[s3,lambda,stepfunctions,cloudwatch]>=5.0.0
+
+# Code quality
+black>=23.12.0
+flake8>=7.0.0
+mypy>=1.8.0
+isort>=5.13.0
+pre-commit>=3.6.0
+
+# Type stubs
+boto3-stubs[s3,lambda,stepfunctions,cloudwatch,kms,secretsmanager]>=1.34.0
+types-python-dateutil>=2.8.0
+pandas-stubs>=2.1.0

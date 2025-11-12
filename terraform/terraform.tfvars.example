@@ -1,0 +1,41 @@
+# Example Terraform variables configuration
+# Copy this file to terraform.tfvars and customize for your deployment
+
+# General Configuration
+project_name = "medical-imaging-pipeline"
+environment  = "dev"
+aws_region   = "us-east-1"
+
+# S3 Configuration
+# Leave empty to auto-generate bucket names with project-environment prefix
+raw_bucket_name       = ""
+processed_bucket_name = ""
+logs_bucket_name      = ""
+
+# Lifecycle management - transition to cheaper storage after X days
+s3_bucket_lifecycle_days = 90
+
+# Lambda Configuration
+lambda_runtime     = "python3.12"
+lambda_timeout     = 300
+lambda_memory_size = 512
+
+# CloudWatch Configuration
+log_retention_days = 30
+
+# Step Functions Configuration
+state_machine_name = "dicom-processing-workflow"
+
+# Security
+enable_s3_encryption = true
+enable_lambda_vpc    = false
+
+# Optional: VPC configuration (only if enable_lambda_vpc = true)
+# vpc_id     = "vpc-xxxxxxxxxxxxx"
+# subnet_ids = ["subnet-xxxxxxxxxxxxx", "subnet-yyyyyyyyyyyyy"]
+
+# Additional tags
+additional_tags = {
+  CostCenter = "Medical Imaging"
+  Owner      = "DevOps Team"
+}

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<imaging_study>
+    <patient id="P001">
+        <name>Test Patient</name>
+        <dob>1980-01-01</dob>
+    </patient>
+    <study uid="1.2.3.4.5.6.7.8.9" date="2025-01-15">
+        <description>CT Chest and Abdomen</description>
+        <modality>CT</modality>
+        <series>
+            <item number="1">Chest CT</item>
+            <item number="2">Abdomen CT</item>
+        </series>
+    </study>
+    <acquisition>
+        <protocol>Standard</protocol>
+        <kvp>120</kvp>
+        <slice_thickness>5.0</slice_thickness>
+    </acquisition>
+</imaging_study>

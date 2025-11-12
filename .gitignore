@@ -1,0 +1,67 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+*.egg
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+*.cover
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Terraform
+terraform/.terraform/
+terraform/.terraform.lock.hcl
+terraform/terraform.tfstate
+terraform/terraform.tfstate.backup
+terraform/*.tfplan
+terraform/lambda_layer.zip
+terraform/lambda_package.zip
+
+# Lambda packages
+medical-imaging-pipeline/lambda_package.zip
+medical-imaging-pipeline/lambda_layer.zip
+
+# Test files
+test.dcm
+processed_test.dcm
+*.dcm
+
+# AWS
+.aws/
+
+# Logs
+*.log
+logs/
+
+# Environment
+.env
+.env.local
+*.pem
+*.key
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+PROJECT_VISION.md

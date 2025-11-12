@@ -1,0 +1,4 @@
+patient_id,study_date,modality,accession_number,status
+P001,2025-01-15,CT,ACC001,completed
+P002,2025-01-16,MR,ACC002,pending
+P003,2025-01-17,CR,ACC003,completed
